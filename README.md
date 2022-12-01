@@ -1,1 +1,1 @@
-# RA_MinstrelSNN
+# Rate Adaption - Minstrel - SNN
