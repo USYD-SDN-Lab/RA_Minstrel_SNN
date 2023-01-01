@@ -40,6 +40,7 @@ class RA_Minstrel_SNN:
     SNN_MODEL_SUPPORTED_MCS     = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 110,
                                    20, 21, 22, 23, 24, 25, 26, 27, 28,
                                    40, 41, 42, 43, 44, 45, 46, 47, 48, 49];
+    SNN_MODEL_SUPPORTED_MCS_LEN = len(SNN_MODEL_SUPPORTED_MCS);
     
     # date file
     col_no_snr                  = None;
@@ -74,7 +75,7 @@ class RA_Minstrel_SNN:
         # try to load all models
         for snn_model_mcs_index in RA_Minstrel_SNN.SNN_MODEL_SUPPORTED_MCS:
             try:
-                snn_model_tmp = keras.models.load_model(f'{snn_model_prefix}{RA_Minstrel_SNN.SNN_MODEL_FILE_NAME_PREFIX}{snn_model_mcs_index}{RA_Minstrel_SNN.SNN_MODEL_FILE_NAME_SUFFIX}');
+                snn_model_tmp = keras.models.load_model(f'{self.snn_model_prefix}{RA_Minstrel_SNN.SNN_MODEL_FILE_NAME_PREFIX}{snn_model_mcs_index}{RA_Minstrel_SNN.SNN_MODEL_FILE_NAME_SUFFIX}');
                 self.snn_models.append(snn_model_tmp);
             except:
                 self.snn_models.append(None);
@@ -131,7 +132,7 @@ class RA_Minstrel_SNN:
         except IndexError:
             raise Exception(MSG_INIT_DATA_FILE_COL_SNR_INDEX_ERR);
         try:
-            targets = data[:, col_no_transmission_result].astype(float);
+            targets = data[:, col_no_transmission_result].astype(int);
         except IndexError:
             raise Exception(MSG_INIT_DATA_FILE_COL_TRANSMISSION_RESULT_INDEX_ERR);
         
@@ -142,10 +143,59 @@ class RA_Minstrel_SNN:
             if data_file_mcs_assigend not in RA_Minstrel_SNN.SNN_MODEL_SUPPORTED_MCS:
                 warnings.warn(MSG_INIT_DATA_FILE_MCS_ILLEGAL);
             else:
+                # calculate sample number
+                sample_num = min(len(features), len(targets));                  # only use samples with both features and targets
+                sample_valid_num = np.floor(sample_num* 0.2).astype(int);       # use the floor for validation samples
                 # expand dimensions
                 features = np.expand_dims(features, -1);
                 targets = np.expand_dims(targets, -1);
-                pass
+                # split features & targets into train & validation
+                features_train = features[:-sample_valid_num];
+                features_valid = features[-sample_valid_num:];
+                targets_train = targets[:-sample_valid_num];
+                targets_valid = targets[-sample_valid_num:];
+                # calculat the occurance of 0 & 1
+                targets_train_0_num, targets_train_1_num = np.bincount(targets_train[:, 0]);
+                # set model parameters
+                model_file_path = f'{self.snn_model_prefix}{RA_Minstrel_SNN.SNN_MODEL_FILE_NAME_PREFIX}{data_file_mcs_assigend}{RA_Minstrel_SNN.SNN_MODEL_FILE_NAME_SUFFIX}'
+                class_weight = {0: 1.0 / targets_train_0_num, 1: 1.0/targets_train_1_num};
+                metrics = [keras.metrics.FalseNegatives(name="fn"),
+                           keras.metrics.FalsePositives(name="fp"),
+                           keras.metrics.TrueNegatives(name="tn"),
+                           keras.metrics.TruePositives(name="tp"),
+                           keras.metrics.Precision(name="precision"),
+                           keras.metrics.Recall(name="recall"),
+                           keras.metrics.BinaryAccuracy(name="accuracy")];
+                es = keras.callbacks.EarlyStopping(monitor ='val_accuracy', patience=100);
+                checkpoint = ModelCheckpoint(model_file_path,
+                                             monitor='val_accuracy',
+                                             mode='max',
+                                             verbose=1,
+                                             save_best_only=True,
+                                             save_weights_only=False);
+                # build the model
+                model = keras.Sequential([keras.layers.InputLayer(input_shape=(1,)),
+                                          keras.layers.Dense(64),
+                                          keras.layers.Dense(1, activation="sigmoid")]);
+                model.summary();
+                model.compile(optimizer=keras.optimizers.Adam(1e-4), loss = "binary_crossentropy", metrics=metrics);
+                # train the model
+                model.fit(features_train,
+                          targets_train,
+                          batch_size=64,
+                          epochs=100,
+                          verbose=1,
+                          callbacks=[checkpoint, es],
+                          validation_data=(features_valid, targets_valid),
+                          class_weight=class_weight);
+                # save model to file
+                model.save(model_file_path);
+                # save model to memory
+                for snn_model_mcs_index in range(0, RA_Minstrel_SNN.SNN_MODEL_SUPPORTED_MCS_LEN):
+                    if RA_Minstrel_SNN.SNN_MODEL_SUPPORTED_MCS[snn_model_mcs_index] == data_file_mcs_assigend:
+                        self.snn_models[snn_model_mcs_index] = model;
+                        break;
+                
         # train all neurals (based on the current MCS)
         elif isinstance(col_no_mcs, int):
             mcs = None;
