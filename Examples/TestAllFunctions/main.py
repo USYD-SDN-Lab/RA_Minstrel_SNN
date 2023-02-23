@@ -73,8 +73,8 @@ for i in range(0, len(test_data)):
         # update SNR
         snr.append(10*np.log(test_data[i, 3]));
         # update SNR-SNN
-        test_mcs_snn_bef = 10*np.log(test_data[i, 3]);
-        snr_snn.append(test_mcs_snn_cur);
+        snr_snn_tmp_bef = 10*np.log(test_data[i, 3]);
+        snr_snn.append(snr_snn_tmp_cur);
         # update SNN mcs
         mcs = rms.predict(test_data[i, 3]);
         test_mcs_snn_bef = mcs;
