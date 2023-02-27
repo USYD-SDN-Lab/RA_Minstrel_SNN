@@ -84,11 +84,9 @@ print('\r100%                                 ');
 
 # draw
 # draw - SNR
-plt.figure(1, figsize=(15, 6), dpi=1200);
+plt.figure(1, figsize=(15, 6), dpi=80);
 plt.semilogy(time, snr, label='SNR(actual)');
 plt.semilogy(time, snr_snn, label='SNR(SNN)');
-for beacon in beacon_time:
-    plt.axvline(x=beacon, color='y')
 plt.xlabel('time');
 plt.ylabel('snr');
 plt.title("SNR Change");

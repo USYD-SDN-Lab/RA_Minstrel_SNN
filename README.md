@@ -16,6 +16,10 @@
     python -c "import tensorflow as tf; print(tf.reduce_sum(tf.random.normal([1000, 1000])))"
     python -c "import tensorflow as tf; print(tf.config.list_physical_devices('GPU'))"
     ```
+* In another local repositiory, add this module
+    ```sh
+    git submodule add git@github.com:USYD-SDN-Lab/RA_Minstrel_SNN.git Modules/RA_Minstrel_SNN
+    ```
 
 ## MCS (802.11ah), NSS = 1, Guard Time(GI) = 8us
 
