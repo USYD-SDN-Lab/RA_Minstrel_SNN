@@ -58,3 +58,7 @@
 | OfdmRate16_2MbpsBW4MHz  | 256-QAM | 3/4                 | 16200            | 8         | 4MHz      | MCS4_8     |
 | OfdmRate18MbpsBW4MHz    | 256-QAM | 5/6                 | 18000            | 9         | 4MHz      | MCS4_9     |
 | not supported           |         |                     |                  | 10        | 4MHz      | MCS4_10    |
+
+## Methods
+* `predict(@snr, @snr_type)`: `@snr` is a scalar, `@snr_type` decides the input unit of **dB** or **linear**. The output is **MCS index**<br>
+Tensorflow `predict` leaks memory, so this method encapsulates prediction to avoid memory leakage and to accelerate the speed.

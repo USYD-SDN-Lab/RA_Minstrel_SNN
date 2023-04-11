@@ -26,6 +26,7 @@ MSG_TRAIN_DATA_FILE_COL_SNR_TYPE_ILLEGAL                     = "[col_no_snr_type
 # predict
 MSG_PREDICT_MODEL_NOT_TRAINED = "None of any model has been trained.";
 MSG_PREDICT_SNR_TYPE_ILLEGAL  = "[snr_type] is not supported.";
+MSG_PREDICT_SNR_NOT_SCALAR = "[snr] is not a scalar";
 
 class RA_Minstrel_SNN:
     # constants
@@ -222,9 +223,8 @@ class RA_Minstrel_SNN:
     predict
     @snr:           snr
     @snr_type:      dB or linear
-    @batch_size:    a scalar of the batch size
     '''
-    def predict(self, snr, *, snr_type = SNR_TYPE_LINEAR, batch_size = None):
+    def predict(self, snr, *, snr_type = SNR_TYPE_LINEAR):
         # input check
         if snr_type not in RA_Minstrel_SNN.SNR_TYPES:
             raise Exception(MSG_PREDICT_SNR_TYPE_ILLEGAL);
@@ -232,18 +232,19 @@ class RA_Minstrel_SNN:
         if snr_type == RA_Minstrel_SNN.SNR_TYPE_LINEAR:
             snr = 10*np.log(snr);
         # make dimension correct
-        snr = np.asarray([snr]);
+        snr = np.asarray(snr);
+        if snr.ndim != 0:
+            raise Exception(MSG_PREDICT_SNR_NOT_SCALAR);
+        snr = np.expand_dims(snr, -1);
         snr = np.expand_dims(snr, -1);
         # predict mcs
         for model_index in range(RA_Minstrel_SNN.SNN_MODEL_SUPPORTED_MCS_LEN - 1, -1, -1):
             # if the model is set
             if self.snn_models[model_index]:
                 # predict
-                if batch_size is None:
-                    predict_result = self.snn_models[model_index](snr, training = False);
-                else:
-                    predict_result = self.snn_models[model_index].predict(snr, verbose=0, batch_size = batch_size)[0];
-                if np.round(predict_result) == 1:
+                predict_result = self.snn_models[model_index](snr, training = False);
+                predict_result = np.squeeze(np.round(predict_result));
+                if predict_result == 1:
                     return RA_Minstrel_SNN.SNN_MODEL_SUPPORTED_MCS[model_index];
         # none of MCS should be used, return the minimal MCS
         return 10;
