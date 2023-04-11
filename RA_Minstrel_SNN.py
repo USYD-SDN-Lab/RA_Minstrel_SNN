@@ -231,15 +231,18 @@ class RA_Minstrel_SNN:
         # to dB
         if snr_type == RA_Minstrel_SNN.SNR_TYPE_LINEAR:
             snr = 10*np.log(snr);
+        # make dimension correct
+        snr = np.asarray([snr]);
+        snr = np.expand_dims(snr, -1);
         # predict mcs
         for model_index in range(RA_Minstrel_SNN.SNN_MODEL_SUPPORTED_MCS_LEN - 1, -1, -1):
             # if the model is set
             if self.snn_models[model_index]:
                 # predict
                 if batch_size is None:
-                    predict_result = self.snn_models[model_index]([snr], training = False);
+                    predict_result = self.snn_models[model_index](snr, training = False);
                 else:
-                    predict_result = self.snn_models[model_index].predict([snr], verbose=0, batch_size = batch_size)[0];
+                    predict_result = self.snn_models[model_index].predict(snr, verbose=0, batch_size = batch_size)[0];
                 if np.round(predict_result) == 1:
                     return RA_Minstrel_SNN.SNN_MODEL_SUPPORTED_MCS[model_index];
         # none of MCS should be used, return the minimal MCS
