@@ -222,8 +222,9 @@ class RA_Minstrel_SNN:
     predict
     @snr:           snr
     @snr_type:      dB or linear
+    @batch_size:    a scalar of the batch size
     '''
-    def predict(self, snr, *, snr_type = SNR_TYPE_LINEAR):
+    def predict(self, snr, *, snr_type = SNR_TYPE_LINEAR, batch_size = None):
         # input check
         if snr_type not in RA_Minstrel_SNN.SNR_TYPES:
             raise Exception(MSG_PREDICT_SNR_TYPE_ILLEGAL);
@@ -235,7 +236,11 @@ class RA_Minstrel_SNN:
             # if the model is set
             if self.snn_models[model_index]:
                 # predict
-                if np.round(self.snn_models[model_index].predict([snr], verbose=0))[0] == 1:
+                if batch_size is None:
+                    predict_result = self.snn_models[model_index]([snr], training = False);
+                else:
+                    predict_result = self.snn_models[model_index].predict([snr], verbose=0, batch_size = batch_size)[0];
+                if np.round(predict_result) == 1:
                     return RA_Minstrel_SNN.SNN_MODEL_SUPPORTED_MCS[model_index];
         # none of MCS should be used, return the minimal MCS
         return 10;

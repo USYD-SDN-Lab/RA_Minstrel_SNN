@@ -4,7 +4,6 @@ import time
 import os
 import pandas
 import numpy as np
-from matplotlib import pyplot as plt
 from RA_Minstrel_SNN import RA_Minstrel_SNN;
 
 # set prefix to store models and 
@@ -42,8 +41,8 @@ input("Here, we test. Please open your memory monitor app and press enter")
 
 while True:
     for i in range(0, 8192):
-        rms.predict(2000);
-        print("\r%.2f%%"%(i/8192), end=" ");
+        mcs = rms.predict(2000);
+        print("\r%.2f, mcs = %d%%"%(i/8192*100, mcs), end=" ");
     print('\r100%                                 ');
     time.sleep(1);
 
