@@ -42,7 +42,7 @@ input("Here, we test. Please open your memory monitor app and press enter")
 while True:
     for i in range(0, 8192):
         mcs = rms.predict(2000);
-        print("\r%.2f, mcs = %d%%"%(i/8192*100, mcs), end=" ");
+        print("\r%.2f%%, mcs = %d"%(i/8192*100, mcs), end=" ");
     print('\r100%                                 ');
     time.sleep(1);
 
